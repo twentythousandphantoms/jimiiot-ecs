@@ -14,7 +14,7 @@
       ],
       "environment": [
         {"name": "KAFKA_ADVERTISED_HOST_NAME", "value": "kafka"},
-        // Add other environment variables here
+        // Other environment variables here
       ],
       "mountPoints": [
         {
@@ -35,5 +35,5 @@
     }
   ],
   "networkMode": "awsvpc",
-  "family": "your-application"
+  "family": "kafka-task"
 }
