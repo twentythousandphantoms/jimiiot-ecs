@@ -1,0 +1,39 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "kafka",
+      "image": "hb.jimiops.top/iothub/jimi-kafka:5.0.1",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 9092,
+          "hostPort": 9092
+        }
+      ],
+      "environment": [
+        {"name": "KAFKA_ADVERTISED_HOST_NAME", "value": "kafka"},
+        // Add other environment variables here
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "kafkaVolume",
+          "containerPath": "/kafka",
+          "readOnly": false
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "kafkaVolume",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "KafkaEFSFileSystemID",
+        "transitEncryption": "ENABLED"
+      }
+    }
+  ],
+  "networkMode": "awsvpc",
+  "family": "your-application"
+}

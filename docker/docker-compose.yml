@@ -1,0 +1,445 @@
+version: "3"
+services:
+  kafka:
+    restart: always
+    container_name: kafka
+    image: hb.jimiops.top/iothub/jimi-kafka:5.0.1
+    ports:
+      - "9092:9092"
+    volumes:
+      - "/iothub/kafka:/kafka"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_PORT: 9092
+      KAFKA_LOG_RETENTION_HOURS: 120
+      KAFKA_MESSAGE_MAX_BYTES: 10000000
+      KAFKA_REPLICA_FETCH_MAX_BYTES: 10000000
+      KAFKA_GROUP_MAX_SESSION_TIMEOUT_MS: 60000
+      KAFKA_NUM_PARTITIONS: 10
+      KAFKA_DELETE_RETENTION_MS: 1000
+      HOSTNAME: kafka
+    depends_on:
+      - zookeeper
+    deploy:
+      resources:
+         limits:
+            cpus: '2'
+            memory: 2G
+         reservations:
+            memory: 1G
+    networks:
+      - backend
+  mongodb:
+    restart: always
+    container_name: mongodb
+    image: hb.jimiops.top/iothub/jimi-mongo:5.0.1
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: jimi@123
+    volumes:
+      - "/iothub/mongoDB:/data/db"
+    networks:
+      - backend
+  redis:
+    restart: always
+    container_name: redis
+    image: hb.jimiops.top/iothub/jimi-redis:5.0.1
+    ports:
+      - "6379:6379"
+    volumes:
+      - "/iothub/redis:/data"
+    command: redis-server --requirepass jimi@123 --appendonly yes
+    networks:
+      - backend
+  zookeeper:
+    restart: always
+    container_name: zookeeper
+    image: hb.jimiops.top/iothub/jimi-zookeeper:5.0.1
+    ports:
+      - "2181:2181"
+    volumes:
+      - "/iothub/zookeeper/data:/data"
+      - "/iothub/zookeeper/datalog:/datalog"
+    networks:
+      - backend
+  api:
+    restart: always
+    container_name: api
+    image: hb.jimiops.top/iothub/tracker-dvr-api:d91c3d77
+    ports:
+      - "9080:9080"
+      - "9081:9081"
+    volumes:
+      - "/iothub/api/:/app/tracker-dvr-api/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+    environment:
+      - routeHost=router
+      - redisHost=redis
+      - redisPassword=jimi@123
+      - mongoHost=mongodb
+      - mongodbUser=root
+      - mongodbPassword=jimi@123
+      #This offlineCmdPushURL is used to receive replies of offline instructions. Please refer to 2.4 for the format. It should be customers' real address!!!
+      - offlineCmdPushURL=http://xxx
+      - offlineCmdPushToken=a12341234123
+    networks:
+      - backend
+  tracker-instruction-server:
+    restart: always
+    container_name: tracker-instruction-server
+    image: hb.jimiops.top/iothub/tracker-instruction-server:d9016cff
+    ports:
+      - "10088:10088"
+      - "10089:10089"
+    volumes:
+      - "/iothub/tracker-instruction-server/:/app/tracker-instruction-server/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+      - redis
+    environment:
+      - routeHost=router
+      - redisHost=redis
+      - redisPassword=jimi@123
+      - redisDB=9
+      - kafkaHost=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      #This offlineCmdPushURL is used to receive replies to offline instructions. Pleaserefer to 2.4 for the format. It should be customers' real address!!!
+      - offlineCmdPushURL=http://xxx
+      - offlineCmdPushToken=a12341234123
+    networks:
+      - backend
+  msg-dispatch-iothub:
+    restart: always
+    container_name: msg-dispatch-iothub
+    image: hb.jimiops.top/iothub/msg-dispatch-iothub:26f6aedf
+    ports:
+      - "10066:10066"
+      - "10067:10067"
+    volumes:
+      - "/iothub/msg-dispatch-iothub/:/app/msg-dispatch-iothub/logs"
+    links:
+      - kafka
+    depends_on:
+      - kafka
+    environment:
+      - kafkaHost=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - pushURL= http://stg.api.wardentracking.com/jimi-iot
+      - pushToken=a12341234123
+     # - topicPrefix=iothub
+     # - emailSendUrl=http://xxx
+      - LICENSE_NOTIFY_EMAIL=liyanmei@jimilab.com
+      #HTTP push data encrypted switch
+      - httpPushEncrypt=false
+      ##Encryption Key
+      - httpPushSecret=JiMi@20232012345
+    networks:
+      - backend
+  dvr-upload:
+    restart: always
+    container_name: dvr-upload
+    image: hb.jimiops.top/iothub/dvr-upload:a2d08f92
+    ports:
+      - "23010:23010"
+      - "23011:23011"
+    volumes:
+      - "/iothub/dvr-upload/logs:/logs"
+      - "/iothub/dvr-upload/uploadFile:/data/upload"
+    environment:
+      - ENABLE_SECRET=true
+      - LOCAL_ENABLE=true
+      - OSS_ENABLE=false
+      - OSS_ENDPOINT=https://xxx
+      - OSS_ACCESS_KEY=<your AccessKeyId>
+      - OSS_BUCKET_NAME=<yourBucketName>
+      - OSS_ACCESS_SECRET=<yourAccessKeySecret>
+      - AWS_ENABLE=false
+      - AWS_REGION=<yourAWSRegion>
+      - AWS_BUCKET_NAME=<yourAWSBucketName>
+      - AWS_ACCESS_KEY_ID=<yourAWSAccessKeyId>
+      - AWS_SECRET_ACCESS_KEY=<yourAWSSecret>
+      - AZURE_ENABLE=false
+      - AZURE_BUCKET_NAME=<yourAzureBucketNmae>
+      - AZURE_ACCOUNT_NAME=<yourAzureAccountName>
+      - AZURE_ACCESS_KEY_ID=<yourAzureAccessKey>
+      - GCS_ENABLE=false
+      - GCS_BUCKET_NAME=<yourGCSBucketName>
+      - GCS_PROJECT_ID=<yourGCSProjectId>
+    networks:
+      - backend
+  tracker-gate-v1:
+    restart: always
+    container_name: tracker-gate-v1
+    image: hb.jimiops.top/iothub/tracker-gate-v1:05832683
+    ports:
+      - "21100:21100"
+      - "22201:21101"
+    volumes:
+      - "/iothub/license:/app/tracker-gate-v1/conf/license"
+      - "/iothub/tracker-gate-v1/logs:/app/tracker-gate-v1/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+    environment:
+      - gateId=tracker-gate-v1-93
+      - routeHost=router
+      - redisHost=redis
+      - redisPort=6379
+      - redisPassword=jimi@123
+      - kafkaHost=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - kafkaEnable=true
+        #LBS value-added service, please contact customer service to open!
+      - lbsURL=http://xxx
+      - lbsToken=a3bfe487e6ae029fb02402e6cb2ceacc
+     # - topicPrefix=iothub
+        #license expiration monitor switch
+      - licenseFlag=true
+        #license expiration notification ountdown configuration (Days)
+      - licenseNoticeCountdownDay=90
+        #license expiration notification timed task, daily start time
+      - licenseNoticeStartTime=23:59:59
+        #license expiration notification timed task interval (hours)
+      - licenseNoticeDelay=24
+    networks:
+      - backend
+  jimi-gateway-v541h:
+    restart: always
+    container_name: jimi-gateway-v541h
+    image: hb.jimiops.top/iothub/tracker-gate-v541h:57109ab3
+    ports:
+      - "31506:31506"
+      - "31507:31507"
+    volumes:
+      - "/iothub/license/:/app/tracker-gate-v541h/conf/license/"
+      - "/iothub/tracker-gate-v541h/logs:/app/tracker-gate-v541h/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+    environment:
+      - gateId=gate-541h-93
+      - routeHost=router
+      - redisHost=redis
+      - redisPort=6379
+      - redisPasswd=jimi@123
+      - kafkaHost=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - kafkaConsumerGroup=v541h-group
+      #- topicPrefix=iothub
+        #license expiration monitor switch
+      - licenseFlag=true
+        #license expiration notification ountdown configuration (Days)
+      - licenseNoticeCountdownDay=90
+        #license expiration notification timed task, daily start time
+      - licenseNoticeStartTime=23:59:59
+        #license expiration notification timed task interval (hours)
+      - licenseNoticeDelay=24
+    networks:
+      - backend
+  jimi-gateway-450:
+    restart: always
+    container_name: jimi-gateway-450
+    image: hb.jimiops.top/iothub/tracker-gate-iothub-c450:eaaaeb7d
+    ports:
+      - "21122:21121"
+      - "15002:15002"
+    volumes:
+      - "/iothub/license/:/app/tracker-gate-iothub-c450/conf/license/"
+      - "/iothub/gate-iothub-c450/logs:/app/tracker-gate-iothub-c450/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+    environment:
+      - gateId=jimi-gateway-450-21122-93
+      - routeHost=router
+      - redisHost=redis
+      - redisPort=6379
+      - redisPasswd=jimi@123
+      - kafkaHost=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - kafkaConsumerGroup=data-128
+      - kafkaEnable=true
+      - connectTimeout=5
+      - readTimeOut=5
+      - writeTimeOut=5
+      - newImeiRule=true
+      #- topicPrefix=iothub
+      #license expiration monitor switch
+      - licenseFlag=true
+        #license expiration notification ountdown configuration (Days)
+      - licenseNoticeCountdownDay=90
+        #license expiration notification timed task, daily start time
+      - licenseNoticeStartTime=23:59:59
+        #license expiration notification timed task interval (hours)
+      - licenseNoticeDelay=24
+    networks:
+      - backend
+  iothub-media:
+    restart: always
+    container_name: iothub-media
+    image: hb.jimiops.top/iothub/iothub-media:cfc71837
+    deploy:
+      resources:
+         limits:
+            cpus: '2'
+            memory: 4G
+         reservations:
+            memory: 2G
+    ports:
+      - "8881:8880"
+      - "1936:1935"
+      - "10002:10000"
+      - "10003:10001"
+    environment:
+      - newImeiRule=true
+    volumes:
+      - "/iothub/iothub-media/log:/log"
+      - "/iothub/license/jimi-license.lic:/jimi-license.lic"
+      #- "/mnt/iothub/93test.pl2:/ssl.pl2"
+    networks:
+      - backend
+  jimi-data:
+    restart: always
+    container_name: jimi-data
+    image: hb.jimiops.top/iothub/tracker-data-mongo:2e89df82
+    volumes:
+      - "/iothub/jimi-data/:/app/tracker-data-mongo/logs"
+    ports:
+      - "21300:21300"
+    links:
+      - kafka
+      - mongodb
+    depends_on:
+      - kafka
+      - mongodb
+    environment:
+    #This URL isused to receive data parsed by LBS/WIFI. Please refer to 1.1.3 pushgps for thedata format. This function involves LBS value-added services and requiresadditional charges!!!
+    #After opening the LBS service, it should be customers' actual address!!!
+#      - pushLbsWifiURL=http://xxx
+#      - pushLbsWifiToken=a12341234123
+    #LBS value-added service, please contact customer service to open!
+#      - lbsWifiServiceURL=http://xxx
+#      - lbsWifiServiceToken=a12341234123
+      - kafka=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - mongoHost=mongodb
+      - mongoPort=27017
+      - mongoUser=root
+      - mongoPass=jimi@123
+      - mongoTtlday=2
+     # - topicPrefix=iothub
+    networks:
+      - backend
+  jimi-tracker-gate-upload:
+    restart: always
+    container_name: jimi-tracker-gate-upload
+    #image: hb.jimiops.top/iothub/tracker-gate-upload:d16fb8d6
+    image: hb.jimiops.top/iothub/tracker-gate-upload:5dbf01f1
+    ports:
+      - "21188:21188"
+      - "21189:21189"
+    volumes:
+      - "/iothub/jimi-tracker-gate-upload:/app/tracker-gate-upload/logs"
+    depends_on:
+      - redis
+      - kafka
+    environment:
+      - redisHost=redis
+      - redisPasswd=jimi@123
+      - redisPort=6379
+      - kafkaUrl=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - newImeiRule=true
+      #- topicPrefix=iothub
+      ##This pushUploadStatusURL is used to receive the results of file push. The interfacerefers to pushIothubEvent. It should be customers' actual URL!!!
+      - pushUploadStatusURL=http://xxx
+      - pushUploadStatusToken=a12341234123
+      - connectTimeout=5
+      - readTimeOut=5
+      - writeTimeOut=5
+      #HTTP push data encrypted switch
+      - httpPushEncrypt=false
+      ##Encryption Key
+      - httpPushSecret=JIMI@20231234567
+    networks:
+      - backend
+  jimi-tracker-upload-process:
+    restart: always
+    container_name: jimi-tracker-upload-process
+    #image: hb.jimiops.top/iothub/tracker-upload-process:f9b07fec
+    image: hb.jimiops.top/iothub/tracker-upload-process:e7a51632
+    ports:
+      - "21210:21210"
+    volumes:
+      - "/iothub/jimi-upload-process/logs:/app/tracker-upload-process/logs"
+      - "/iothub/jimi-upload-process/uploadFile:/temp"
+    depends_on:
+      - redis
+      - kafka
+    environment:
+      - redisHost=redis
+      - redisPasswd=jimi@123
+      - redisPort=6379
+      - kafkaUrl=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      #- topicPrefix=iothub
+    networks:
+      - backend
+  router:
+    restart: always
+    container_name: router
+    image: hb.jimiops.top/iothub/tracker-route-server:e53d65bd
+    ports:
+      - "21200:21200"
+      - "21220:21220"
+    volumes:
+      - "/iothub/router/logs:/app/tracker-route-server/logs"
+    depends_on:
+      - redis
+    environment:
+      - redisHost=redis
+      - redisPasswd=jimi@123
+      - redisPort=6379
+      - loginRedisDB=2
+    networks:
+      - backend
+networks:
+  backend:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet:  172.16.13.0/24
