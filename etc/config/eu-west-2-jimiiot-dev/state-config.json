@@ -1,0 +1,12 @@
+{
+  "provider": "aws",
+  "state": {
+    "bucket": "jimiiot-dev-platform-states",
+    "region": "eu-west-2",
+    "prefix": "jimiiot-dev",
+    "tags": {
+      "Environment": "dev",
+      "Product": "jimiiot"
+    }
+  }
+}
