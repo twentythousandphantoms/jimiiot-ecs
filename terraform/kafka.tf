@@ -19,7 +19,7 @@ resource "aws_security_group" "jimi_kafka_sg" {
   }
 
   tags = {
-    Name = "jimi_kafka_sg",
+    Name      = "jimi_kafka_sg",
     Component = "Kafka"
   }
 }
@@ -37,16 +37,17 @@ resource "aws_ecs_task_definition" "kafka" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_execution_role.arn
   cpu                      = "256"
   memory                   = "512"
 
   container_definitions = jsonencode([
     {
-      name      = "kafka"
-      image     = "hb.jimiops.top/iothub/jimi-kafka:5.0.1"
-      cpu       = 256
-      memory    = 512
-      essential = true
+      name         = "kafka"
+      image        = "${aws_ecr_repository.ecr_repo.repository_url}:jimi-kafka"
+      cpu          = 256
+      memory       = 512
+      essential    = true
       portMappings = [
         {
           containerPort = 9092
@@ -73,7 +74,7 @@ resource "aws_ecs_task_definition" "kafka" {
     name = "kafkaVolume"
 
     efs_volume_configuration {
-      file_system_id = aws_efs_file_system.kafka_volume.id
+      file_system_id     = aws_efs_file_system.kafka_volume.id
       transit_encryption = "ENABLED"
     }
   }
@@ -88,8 +89,8 @@ resource "aws_ecs_service" "kafka_service" {
 
   network_configuration {
     assign_public_ip = true
-    subnets         = [aws_subnet.jimi_subnet_1.id, aws_subnet.jimi_subnet_2.id]
-    security_groups = [aws_security_group.jimi_kafka_sg.id]
+    subnets          = [aws_subnet.jimi_subnet_1.id, aws_subnet.jimi_subnet_2.id]
+    security_groups  = [aws_security_group.jimi_kafka_sg.id]
   }
 
   desired_count = 1

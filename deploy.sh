@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -eo pipefail
-set -x
+#set -x
 
 export AWS_PAGER=""
 

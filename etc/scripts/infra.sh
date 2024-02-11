@@ -70,6 +70,7 @@ function plan_infra_provision () {
   env TF_DATA_DIR=${TF_DATA_DIR} \
     terraform plan \
       -input=false \
+      -var=environ=${PRODUCT_CONFIG_ENV} \
       -var=region=${PRODUCT_CONFIG_REGION} \
       -var-file=${CONFIG_FILE} \
       -out tfplan
@@ -86,6 +87,7 @@ function create_infra () {
     terraform apply \
       -input=false \
       -auto-approve \
+      -var=environ=${PRODUCT_CONFIG_ENV} \
       -var=region=${PRODUCT_CONFIG_REGION} \
       -var-file=${CONFIG_FILE}
 }
@@ -98,6 +100,7 @@ function refresh_infra () {
   env TF_DATA_DIR=${TF_DATA_DIR} \
     terraform refresh \
       -input=false \
+      -var=environ=${PRODUCT_CONFIG_ENV} \
       -var=region=${PRODUCT_CONFIG_REGION} \
       -var-file=${CONFIG_FILE}
 }
@@ -113,6 +116,7 @@ function destroy_infra () {
     terraform destroy \
       -input=false \
       -auto-approve \
+      -var=environ=${PRODUCT_CONFIG_ENV} \
       -var=region=${PRODUCT_CONFIG_REGION} \
       -var-file=${CONFIG_FILE}
 }
