@@ -1,15 +1,10 @@
-variable "product_name" {
-  default = "jimiiot"
-}
+variable "name" {}
+variable "region" {}
 
-variable "region" {
-  default = "eu-west-2"
-  description = "The AWS region in which to create the VPC. Default: eu-west-2 (London)"
-}
-
-variable "environ" {
-  default = "dev"
-  description = "The environment in which the product will be deployed. Default: dev"
+variable "source_docker_images_repo" {
+  type = string
+  description = "The source docker images repository"
+  default = "hb.jimiops.top/iothub"
 }
 
 variable "docker_images_tags" {
