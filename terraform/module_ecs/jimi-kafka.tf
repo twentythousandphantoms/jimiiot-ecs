@@ -129,5 +129,26 @@ resource "aws_ecs_service" "kafka_service" {
     security_groups  = [var.aws_security_group_id]
   }
 
+  service_registries {
+    registry_arn   = aws_service_discovery_service.kafka.arn
+  }
+
   desired_count = 1
+}
+
+resource "aws_service_discovery_service" "kafka" {
+  name = "kafka"
+
+  dns_config {
+      namespace_id = var.service_discovery_namespace.id
+
+    dns_records {
+      ttl  = 10
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
 }

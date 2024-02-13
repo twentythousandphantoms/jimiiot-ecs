@@ -18,6 +18,7 @@ variable "docker_images_tags" {
     "jimi-kafka"                 = "5.0.1",
     "jimi-zookeeper"             = "5.0.1",
     "jimi-mongo"                 = "5.0.1",
+    "jimi-redis"                 = "5.0.1",
     "tracker-dvr-api"            = "d91c3d77",
     "tracker-instruction-server" = "d9016cff",
     "msg-dispatch-iothub"        = "26f6aedf",

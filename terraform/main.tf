@@ -18,7 +18,6 @@ module "network" {
 module "ecs" {
   source = "./module_ecs"
   region = var.region
-#  name = "${var.product_name}-${var.environ}"
 
   aws_ecr_repository_url = module.ecr.repository_url
   docker_images_tags = var.docker_images_tags

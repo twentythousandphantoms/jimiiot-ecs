@@ -66,3 +66,25 @@ resource "aws_iam_role_policy_attachment" "ecs_logs_policy_attachment" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.ecs_logs_policy.arn
 }
+
+
+# The common EFS volume for logs
+resource "aws_efs_file_system" "common_volume" {
+  creation_token = "commonVolume"
+  performance_mode = "generalPurpose"
+  throughput_mode = "bursting"
+  encrypted = false
+  lifecycle_policy {
+      transition_to_ia = "AFTER_30_DAYS"
+  }
+  tags = {
+      Name = "commonVolume"
+  }
+}
+
+resource "aws_efs_mount_target" "common_volume" {
+  count          = length(var.aws_subnets)
+  file_system_id = aws_efs_file_system.common_volume.id
+  subnet_id = element(var.aws_subnets, count.index)
+  security_groups = [var.aws_security_group_id]
+}

@@ -4,8 +4,8 @@ locals {
   zk_image_tag = "${local.zk_image_name}-${var.docker_images_tags[local.zk_image_name]}"
 }
 
-resource "aws_efs_file_system" "zookeeper_volume" {
-  creation_token = "zookeeperVolume"
+resource "aws_efs_file_system" "zookeeper_volume_data" {
+  creation_token = "zookeeperVolumeData"
   performance_mode = "generalPurpose"
   throughput_mode = "bursting"
   encrypted = false
@@ -13,13 +13,33 @@ resource "aws_efs_file_system" "zookeeper_volume" {
       transition_to_ia = "AFTER_30_DAYS"
   }
   tags = {
-      Name = "zookeeperVolume"
+      Name = "zookeeperVolumeData"
   }
 }
 
-resource "aws_efs_mount_target" "zookeeper_volume" {
+resource "aws_efs_mount_target" "zookeeper_volume_data" {
   count          = length(var.aws_subnets)
-  file_system_id = aws_efs_file_system.zookeeper_volume.id
+  file_system_id = aws_efs_file_system.zookeeper_volume_data.id
+  subnet_id = element(var.aws_subnets, count.index)
+  security_groups = [var.aws_security_group_id]
+}
+
+resource "aws_efs_file_system" "zookeeper_volume_log" {
+  creation_token = "zookeeperVolumeLog"
+  performance_mode = "generalPurpose"
+  throughput_mode = "bursting"
+  encrypted = false
+  lifecycle_policy {
+      transition_to_ia = "AFTER_30_DAYS"
+  }
+  tags = {
+      Name = "zookeeperVolumeLog"
+  }
+}
+
+resource "aws_efs_mount_target" "zookeeper_volume_log" {
+  count          = length(var.aws_subnets)
+  file_system_id = aws_efs_file_system.zookeeper_volume_log.id
   subnet_id = element(var.aws_subnets, count.index)
   security_groups = [var.aws_security_group_id]
 }
@@ -59,6 +79,18 @@ resource "aws_ecs_task_definition" "zookeeper" {
             value = "1"
             }
         ]
+      mountPoints = [
+        {
+          sourceVolume  = "zookeperVolumeData"
+          containerPath = "/data"
+          readOnly      = false
+        },
+        {
+          sourceVolume  = "zookeperVolumeLog"
+          containerPath = "/datalog"
+          readOnly      = false
+        },
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -69,6 +101,22 @@ resource "aws_ecs_task_definition" "zookeeper" {
       }
     }
   ])
+
+  volume {
+    name = "zookeperVolumeData"
+
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.zookeeper_volume_data.id
+    }
+  }
+  volume {
+    name = "zookeperVolumeLog"
+
+    efs_volume_configuration {
+      file_system_id     = aws_efs_file_system.zookeeper_volume_log.id
+    }
+  }
+
 }
 
 resource "aws_ecs_service" "zookeeper" {
