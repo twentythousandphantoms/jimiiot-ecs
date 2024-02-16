@@ -73,7 +73,7 @@ resource "aws_ecs_task_definition" "router" {
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.common_volume.id
-        root_directory     = "/iothub/router/logs"
+        root_directory     = "/"
     }
   }
 }

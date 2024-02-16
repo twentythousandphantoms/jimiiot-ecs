@@ -97,7 +97,7 @@ resource "aws_ecs_task_definition" "tracker-instruction-server" {
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.common_volume.id
-      root_directory     = "/app/tracker-instruction-server/logs"
+      root_directory     = "/"
     }
   }
 }

@@ -13,7 +13,7 @@ resource "aws_ecs_task_definition" "dvr-upload" {
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
   task_role_arn            = aws_iam_role.ecs_execution_role.arn
   cpu                      = "256"
-  memory                   = "512"
+  memory                   = "1024"
 
   container_definitions    = jsonencode([
     {
@@ -87,11 +87,11 @@ resource "aws_ecs_task_definition" "dvr-upload" {
           containerPath = "/logs"
           readOnly      = false
         },
-        {
-          sourceVolume  = "commonVolumeUpload"
-          containerPath = "/data/upload"
-          readOnly      = false
-        }
+#        {
+#          sourceVolume  = "commonVolumeUpload"
+#          containerPath = "/data/upload"
+#          readOnly      = false
+#        }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -109,17 +109,17 @@ resource "aws_ecs_task_definition" "dvr-upload" {
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.common_volume.id
-      root_directory     = "/app/dvr-upload/logs"
+      root_directory     = "/"
     }
   }
-  volume {
-    name = "commonVolumeUpload"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.common_volume.id
-      root_directory     = "/app/dvr-upload/uploadFile"
-    }
-  }
+#  volume {
+#    name = "commonVolumeUpload"
+#
+#    efs_volume_configuration {
+#      file_system_id     = aws_efs_file_system.common_volume.id
+#      root_directory     = "/uploadFile"
+#    }
+#  }
 }
 
 resource "aws_ecs_service" "dvr-upload" {

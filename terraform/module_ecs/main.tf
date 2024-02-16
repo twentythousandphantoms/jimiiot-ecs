@@ -36,10 +36,17 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role_policy_attachment"
 }
 
 # attach AmazonEC2ContainerRegistryReadOnly
-resource "aws_iam_policy_attachment" "ecs_execution_role_policy_attachment" {
+resource "aws_iam_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
   name       = "ecs_execution_role_policy_attachment"
   roles      = [aws_iam_role.ecs_execution_role.name]
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+# attach TransitEncryption for EFS
+resource "aws_iam_policy_attachment" "AmazonElasticFileSystemClientFullAccess" {
+  name       = "ecs_execution_role_policy_attachment"
+  roles      = [aws_iam_role.ecs_execution_role.name]
+  policy_arn = "arn:aws:iam::aws:policy/AmazonElasticFileSystemClientFullAccess"
 }
 
 resource "aws_iam_policy" "ecs_logs_policy" {

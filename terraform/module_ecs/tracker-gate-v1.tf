@@ -107,11 +107,6 @@ resource "aws_ecs_task_definition" "tracker-gate-v1" {
           sourceVolume  = "commonVolumeLogs"
           containerPath = "/iothub/tracker-gate-v1/logs"
           readOnly      = false
-        },
-        {
-          sourceVolume  = "commonVolumeUpload"
-          containerPath = "/data/upload"
-          readOnly      = false
         }
       ]
       logConfiguration = {
@@ -131,14 +126,6 @@ resource "aws_ecs_task_definition" "tracker-gate-v1" {
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.common_volume.id
       root_directory     = "/app/tracker-gate-v1/logs"
-    }
-  }
-  volume {
-    name = "commonVolumeUpload"
-
-    efs_volume_configuration {
-      file_system_id     = aws_efs_file_system.common_volume.id
-      root_directory     = "/app/tracker-gate-v1/uploadFile"
     }
   }
 }

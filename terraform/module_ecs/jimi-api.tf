@@ -65,7 +65,7 @@ resource "aws_ecs_task_definition" "api" {
       mountPoints = [
         {
           sourceVolume  = "commonVolume"
-          containerPath = "/app/tracker-dvr-api/logs"
+          containerPath = "/"
           readOnly      = false
         }
       ]
