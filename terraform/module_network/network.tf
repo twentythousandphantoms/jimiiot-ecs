@@ -12,7 +12,7 @@ resource "aws_vpc" "jimi_vpc" {
 # Subnets
 
 resource "aws_subnet" "jimi_subnet" {
-  count             = 3
+  count             = length(var.availability_zones)
   vpc_id            = aws_vpc.jimi_vpc.id
   cidr_block        = "10.0.${count.index + 1}.0/24"
   availability_zone = var.availability_zones[count.index]
@@ -29,48 +29,78 @@ resource "aws_security_group" "jimi_common_sg" {
   description = "Allow inbound traffic for Jimi Kafka"
   vpc_id      = aws_vpc.jimi_vpc.id
 
-  ingress {
-    description = "NFS Ingress"
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
-  }
+#  ingress {
+#    description = "NFS Ingress"
+#    from_port   = 2049
+#    to_port     = 2049
+#    protocol    = "tcp"
+#    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
+#  }
+#
+#  ingress {
+#    description = "Kafka Ingress"
+#    from_port   = 9092
+#    to_port     = 9092
+#    protocol    = "tcp"
+#    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
+#  }
+#
+#  ingress {
+#    description = "Zookeeper Ingress"
+#    from_port   = 2181
+#    to_port     = 2181
+#    protocol    = "tcp"
+#    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
+#  }
+#  ingress {
+#    description = "HTTPS Ingress for VPC Endpoint"
+#    from_port   = 443
+#    to_port     = 443
+#    protocol    = "tcp"
+#    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
+#  }
 
-  ingress {
-    description = "Kafka Ingress"
-    from_port   = 9092
-    to_port     = 9092
-    protocol    = "tcp"
-    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
-  }
-
-  ingress {
-    description = "Zookeeper Ingress"
-    from_port   = 2181
-    to_port     = 2181
-    protocol    = "tcp"
-    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
-  }
-  ingress {
-    description = "HTTPS Ingress for VPC Endpoint"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = aws_subnet.jimi_subnet.*.cidr_block
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+#  egress {
+#    from_port   = 0
+#    to_port     = 0
+#    protocol    = "-1"
+#    cidr_blocks = ["0.0.0.0/0"]
+#  }
 
   tags = {
     Name      = "jimi_common_sg",
     Component = "Kafka"
   }
+}
+
+variable "jimi_ports" {
+  type = list
+  default = [
+    "443", "2049",
+    "9092", "2181",
+    "27017", "6379",
+    "9080", "9081",
+    "10088",
+    "10066", "10067",
+    "21100", "21200",
+    "21201", "21220",
+    "23010", "23011"
+  ]
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rule" {
+  for_each = toset(var.jimi_ports)
+  from_port = each.value
+  to_port = each.value
+  ip_protocol = "tcp"
+  cidr_ipv4 = "10.0.0.0/8"
+  security_group_id = aws_security_group.jimi_common_sg.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "egress_rule" {
+  security_group_id = aws_security_group.jimi_common_sg.id
+  ip_protocol = "-1"
+  cidr_ipv4 = "0.0.0.0/0"
 }
 
 # Internet Gateway
