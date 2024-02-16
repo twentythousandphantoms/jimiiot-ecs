@@ -8,7 +8,15 @@ resource "aws_s3_bucket" "license_bucket" {
   bucket = "jimi-license-bucket"
 }
 
+resource "aws_s3_bucket_ownership_controls" "license_bucket" {
+  bucket = aws_s3_bucket.license_bucket.id
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
 resource "aws_s3_bucket_acl" "license_bucket" {
+  depends_on = [aws_s3_bucket_ownership_controls.license_bucket]
   bucket = aws_s3_bucket.license_bucket.id
   acl    = "private"
 }
@@ -18,6 +26,10 @@ resource "aws_s3_object" "license_file" {
   key    = var.license_name
   source = "/Users/ab/Downloads/${var.license_name}"
   acl    = "private"
+}
+
+locals {
+  license_s3_location = "${aws_s3_bucket.license_bucket.bucket}/${var.license_name}"
 }
 
 resource "aws_iam_policy" "s3_read_license_policy" {

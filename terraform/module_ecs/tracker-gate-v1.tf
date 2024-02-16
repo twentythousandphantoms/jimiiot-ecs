@@ -102,6 +102,16 @@ resource "aws_ecs_task_definition" "tracker-gate-v1" {
               value = "24"
             },
         ]
+      entryPoint = [
+        "aws",
+        "s3",
+        "cp",
+        "s3://${aws_s3_bucket.license_bucket.bucket}/${var.license_name}",
+        "/app/tracker-gate-v1/conf/license/${var.license_name}",
+        "&&",
+        "exec",
+        "$@"
+      ]
       mountPoints = [
         {
           sourceVolume  = "commonVolumeLogs"
