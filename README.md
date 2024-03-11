@@ -1,7 +1,7 @@
 Jimi-iot
 =
 
-These are Terraform scripts for deploying jimi-iot platmorm in AWS ECS. 
+These are Terraform scripts for deploying jimi-iot platform in AWS ECS. 
 
 
 How to run: 
@@ -22,7 +22,7 @@ $bash deploy.sh d # for terraform destroy
 ```
 
 TODO: 
-* Create a better solution to put the licence file inside the containers
+* Create a better solution to put the license file inside the containers
 Some ideas for this -  
 1. install awscli during container startup by customizing entrypoint command,  
 2. or attach a volume containing the license to the containers  
