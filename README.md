@@ -1,7 +1,7 @@
 Jimi-iot
 =
 
-These are Terraform scripts for deploying jimi-iot platmorn in AWS ECS. 
+These are Terraform scripts for deploying jimi-iot platmorm in AWS ECS. 
 
 
 How to run: 
