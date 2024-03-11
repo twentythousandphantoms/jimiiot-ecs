@@ -21,6 +21,17 @@ $bash deploy.sh a # for terraform apply
 $bash deploy.sh d # for terraform destroy  
 ```
 
+TODO: 
+* Create a better solution to put the licence file inside the containers
+Some ideas for this -  
+1. install awscli during container startup by customizing entrypoint command,  
+2. or attach a volume containing the license to the containers  
+2.1 this requires developing a separate satellite container which has  
+2.1.a the license file baked inside it  
+2.1.b or aws cli installed and script to download the license file from s3/aws secrets  
 
 
+* Dive deeper into the specifics and requirements of the jimi components and satisfy to make everything work (and there is not enough documentation on this, unfortunately)
+* Develop load balancing and autoscaling
+* Adapt everything (especially networking) to your infrastructure and account.
 
