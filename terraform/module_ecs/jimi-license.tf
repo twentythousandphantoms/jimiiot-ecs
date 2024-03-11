@@ -52,3 +52,30 @@ resource "aws_iam_role_policy_attachment" "s3_read_license_attach" {
   role       = aws_iam_role.ecs_execution_role.name
   policy_arn = aws_iam_policy.s3_read_license_policy.arn
 }
+
+locals {
+    awscli_install_cmd = [
+    "curl",
+    "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip",
+    "-o",
+    "awscliv2.zip",
+    "&&",
+    "unzip",
+    "awscliv2.zip",
+    "&&",
+    "./aws/install"
+  ]
+
+  awscli_install_cmd_string = join(" ", local.awscli_install_cmd)
+
+
+  license_dl_cmd = [
+    "aws",
+    "s3",
+    "cp",
+    "s3://${aws_s3_bucket.license_bucket.bucket}/${var.license_name}",
+    "/app/tracker-gate-v1/conf/license/${var.license_name}"
+  ]
+
+  license_dl_cmd_string = join(" ", local.license_dl_cmd)
+}

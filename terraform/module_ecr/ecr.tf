@@ -46,7 +46,7 @@ resource "aws_ecr_repository_policy" "ecr_repo" {
 
 resource "null_resource" "docker_login" {
   triggers = {
-    always_run = "${timestamp()}"
+#    run_every_day = "${formatdate("MMM DD", timestamp())}"
   }
 
   provisioner "local-exec" {
@@ -61,7 +61,7 @@ resource "null_resource" "docker_images_push" {
   for_each = var.docker_images_tags
 
   triggers = {
-    always_run = "${timestamp()}"
+#    run_every_day = "${formatdate("MMM DD", timestamp())}"
     region = var.region
     source_image_tag = "${var.source_docker_images_repo}/${each.key}:${each.value}"
     ecr_repo_url = aws_ecr_repository.ecr_repo.repository_url

@@ -102,15 +102,12 @@ resource "aws_ecs_task_definition" "tracker-gate-v1" {
               value = "24"
             },
         ]
+
+      # In entryPoint merge local.awscli_install_cmd_string and local.license_dl_cmd_string
       entryPoint = [
-        "aws",
-        "s3",
-        "cp",
-        "s3://${aws_s3_bucket.license_bucket.bucket}/${var.license_name}",
-        "/app/tracker-gate-v1/conf/license/${var.license_name}",
-        "&&",
-        "exec",
-        "$@"
+        "/bin/sh",
+        "-c",
+        "echo 'tracker-gate-v1 container is starting...'; ${local.awscli_install_cmd_string}; ${local.license_dl_cmd_string}; echo 'tracker-gate-v1 container started.'"
       ]
       mountPoints = [
         {
@@ -135,7 +132,7 @@ resource "aws_ecs_task_definition" "tracker-gate-v1" {
 
     efs_volume_configuration {
       file_system_id     = aws_efs_file_system.common_volume.id
-      root_directory     = "/app/tracker-gate-v1/logs"
+      root_directory     = "/"
     }
   }
 }

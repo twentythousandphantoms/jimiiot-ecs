@@ -1,5 +1,97 @@
 version: "3"
 services:
+  api:
+    restart: always
+    container_name: api
+    image: hb.jimiops.top/iothub/tracker-dvr-api:d91c3d77
+    ports:
+      - "9080:9080"
+      - "9081:9081"
+    volumes:
+      - "/iothub/api/:/app/tracker-dvr-api/logs"
+    links:
+      - router
+      - redis
+    depends_on:
+      - router
+    environment:
+      - routeHost=router
+      - redisHost=redis
+      - redisPassword=jimi@123
+      - mongoHost=mongodb
+      - mongodbUser=root
+      - mongodbPassword=jimi@123
+      #This offlineCmdPushURL is used to receive replies of offline instructions. Please refer to 2.4 for the format. It should be customers' real address!!!
+      - offlineCmdPushURL=http://xxx
+      - offlineCmdPushToken=a12341234123
+    networks:
+      - backend
+  jimi-data:
+    restart: always
+    container_name: jimi-data
+    image: hb.jimiops.top/iothub/tracker-data-mongo:2e89df82
+    volumes:
+      - "/iothub/jimi-data/:/app/tracker-data-mongo/logs"
+    ports:
+      - "21300:21300"
+    links:
+      - kafka
+      - mongodb
+    depends_on:
+      - kafka
+      - mongodb
+    environment:
+      #This URL isused to receive data parsed by LBS/WIFI. Please refer to 1.1.3 pushgps for thedata format. This function involves LBS value-added services and requiresadditional charges!!!
+      #After opening the LBS service, it should be customers' actual address!!!
+      #      - pushLbsWifiURL=http://xxx
+      #      - pushLbsWifiToken=a12341234123
+      #LBS value-added service, please contact customer service to open!
+      #      - lbsWifiServiceURL=http://xxx
+      #      - lbsWifiServiceToken=a12341234123
+      - kafka=kafka:9092
+      - kafkaAuthSwitch=false
+      - kafkaAuthUserName=admin
+      - kafkaAuthPassword=123456
+      - mongoHost=mongodb
+      - mongoPort=27017
+      - mongoUser=root
+      - mongoPass=jimi@123
+      - mongoTtlday=2
+      # - topicPrefix=iothub
+    networks:
+      - backend
+  dvr-upload:
+    restart: always
+    container_name: dvr-upload
+    image: hb.jimiops.top/iothub/dvr-upload:a2d08f92
+    ports:
+      - "23010:23010"
+      - "23011:23011"
+    volumes:
+      - "/iothub/dvr-upload/logs:/logs"
+      - "/iothub/dvr-upload/uploadFile:/data/upload"
+    environment:
+      - ENABLE_SECRET=true
+      - LOCAL_ENABLE=true
+      - OSS_ENABLE=false
+      - OSS_ENDPOINT=https://xxx
+      - OSS_ACCESS_KEY=<your AccessKeyId>
+      - OSS_BUCKET_NAME=<yourBucketName>
+      - OSS_ACCESS_SECRET=<yourAccessKeySecret>
+      - AWS_ENABLE=false
+      - AWS_REGION=<yourAWSRegion>
+      - AWS_BUCKET_NAME=<yourAWSBucketName>
+      - AWS_ACCESS_KEY_ID=<yourAWSAccessKeyId>
+      - AWS_SECRET_ACCESS_KEY=<yourAWSSecret>
+      - AZURE_ENABLE=false
+      - AZURE_BUCKET_NAME=<yourAzureBucketNmae>
+      - AZURE_ACCOUNT_NAME=<yourAzureAccountName>
+      - AZURE_ACCESS_KEY_ID=<yourAzureAccessKey>
+      - GCS_ENABLE=false
+      - GCS_BUCKET_NAME=<yourGCSBucketName>
+      - GCS_PROJECT_ID=<yourGCSProjectId>
+    networks:
+      - backend
   kafka:
     restart: always
     container_name: kafka
@@ -55,72 +147,6 @@ services:
     command: redis-server --requirepass jimi@123 --appendonly yes
     networks:
       - backend
-  zookeeper:
-    restart: always
-    container_name: zookeeper
-    image: hb.jimiops.top/iothub/jimi-zookeeper:5.0.1
-    ports:
-      - "2181:2181"
-    volumes:
-      - "/iothub/zookeeper/data:/data"
-      - "/iothub/zookeeper/datalog:/datalog"
-    networks:
-      - backend
-  api:
-    restart: always
-    container_name: api
-    image: hb.jimiops.top/iothub/tracker-dvr-api:d91c3d77
-    ports:
-      - "9080:9080"
-      - "9081:9081"
-    volumes:
-      - "/iothub/api/:/app/tracker-dvr-api/logs"
-    links:
-      - router
-      - redis
-    depends_on:
-      - router
-    environment:
-      - routeHost=router
-      - redisHost=redis
-      - redisPassword=jimi@123
-      - mongoHost=mongodb
-      - mongodbUser=root
-      - mongodbPassword=jimi@123
-      #This offlineCmdPushURL is used to receive replies of offline instructions. Please refer to 2.4 for the format. It should be customers' real address!!!
-      - offlineCmdPushURL=http://xxx
-      - offlineCmdPushToken=a12341234123
-    networks:
-      - backend
-  tracker-instruction-server:
-    restart: always
-    container_name: tracker-instruction-server
-    image: hb.jimiops.top/iothub/tracker-instruction-server:d9016cff
-    ports:
-      - "10088:10088"
-      - "10089:10089"
-    volumes:
-      - "/iothub/tracker-instruction-server/:/app/tracker-instruction-server/logs"
-    links:
-      - router
-      - redis
-    depends_on:
-      - router
-      - redis
-    environment:
-      - routeHost=router
-      - redisHost=redis
-      - redisPassword=jimi@123
-      - redisDB=9
-      - kafkaHost=kafka:9092
-      - kafkaAuthSwitch=false
-      - kafkaAuthUserName=admin
-      - kafkaAuthPassword=123456
-      #This offlineCmdPushURL is used to receive replies to offline instructions. Pleaserefer to 2.4 for the format. It should be customers' real address!!!
-      - offlineCmdPushURL=http://xxx
-      - offlineCmdPushToken=a12341234123
-    networks:
-      - backend
   msg-dispatch-iothub:
     restart: always
     container_name: msg-dispatch-iothub
@@ -148,38 +174,6 @@ services:
       - httpPushEncrypt=false
       ##Encryption Key
       - httpPushSecret=JiMi@20232012345
-    networks:
-      - backend
-  dvr-upload:
-    restart: always
-    container_name: dvr-upload
-    image: hb.jimiops.top/iothub/dvr-upload:a2d08f92
-    ports:
-      - "23010:23010"
-      - "23011:23011"
-    volumes:
-      - "/iothub/dvr-upload/logs:/logs"
-      - "/iothub/dvr-upload/uploadFile:/data/upload"
-    environment:
-      - ENABLE_SECRET=true
-      - LOCAL_ENABLE=true
-      - OSS_ENABLE=false
-      - OSS_ENDPOINT=https://xxx
-      - OSS_ACCESS_KEY=<your AccessKeyId>
-      - OSS_BUCKET_NAME=<yourBucketName>
-      - OSS_ACCESS_SECRET=<yourAccessKeySecret>
-      - AWS_ENABLE=false
-      - AWS_REGION=<yourAWSRegion>
-      - AWS_BUCKET_NAME=<yourAWSBucketName>
-      - AWS_ACCESS_KEY_ID=<yourAWSAccessKeyId>
-      - AWS_SECRET_ACCESS_KEY=<yourAWSSecret>
-      - AZURE_ENABLE=false
-      - AZURE_BUCKET_NAME=<yourAzureBucketNmae>
-      - AZURE_ACCOUNT_NAME=<yourAzureAccountName>
-      - AZURE_ACCESS_KEY_ID=<yourAzureAccessKey>
-      - GCS_ENABLE=false
-      - GCS_BUCKET_NAME=<yourGCSBucketName>
-      - GCS_PROJECT_ID=<yourGCSProjectId>
     networks:
       - backend
   tracker-gate-v1:
@@ -325,38 +319,33 @@ services:
       #- "/mnt/iothub/93test.pl2:/ssl.pl2"
     networks:
       - backend
-  jimi-data:
+  tracker-instruction-server:
     restart: always
-    container_name: jimi-data
-    image: hb.jimiops.top/iothub/tracker-data-mongo:2e89df82
-    volumes:
-      - "/iothub/jimi-data/:/app/tracker-data-mongo/logs"
+    container_name: tracker-instruction-server
+    image: hb.jimiops.top/iothub/tracker-instruction-server:d9016cff
     ports:
-      - "21300:21300"
+      - "10088:10088"
+      - "10089:10089"
+    volumes:
+      - "/iothub/tracker-instruction-server/:/app/tracker-instruction-server/logs"
     links:
-      - kafka
-      - mongodb
+      - router
+      - redis
     depends_on:
-      - kafka
-      - mongodb
+      - router
+      - redis
     environment:
-    #This URL isused to receive data parsed by LBS/WIFI. Please refer to 1.1.3 pushgps for thedata format. This function involves LBS value-added services and requiresadditional charges!!!
-    #After opening the LBS service, it should be customers' actual address!!!
-#      - pushLbsWifiURL=http://xxx
-#      - pushLbsWifiToken=a12341234123
-    #LBS value-added service, please contact customer service to open!
-#      - lbsWifiServiceURL=http://xxx
-#      - lbsWifiServiceToken=a12341234123
-      - kafka=kafka:9092
+      - routeHost=router
+      - redisHost=redis
+      - redisPassword=jimi@123
+      - redisDB=9
+      - kafkaHost=kafka:9092
       - kafkaAuthSwitch=false
       - kafkaAuthUserName=admin
       - kafkaAuthPassword=123456
-      - mongoHost=mongodb
-      - mongoPort=27017
-      - mongoUser=root
-      - mongoPass=jimi@123
-      - mongoTtlday=2
-     # - topicPrefix=iothub
+      #This offlineCmdPushURL is used to receive replies to offline instructions. Pleaserefer to 2.4 for the format. It should be customers' real address!!!
+      - offlineCmdPushURL=http://xxx
+      - offlineCmdPushToken=a12341234123
     networks:
       - backend
   jimi-tracker-gate-upload:
@@ -434,6 +423,17 @@ services:
       - redisPasswd=jimi@123
       - redisPort=6379
       - loginRedisDB=2
+    networks:
+      - backend
+  zookeeper:
+    restart: always
+    container_name: zookeeper
+    image: hb.jimiops.top/iothub/jimi-zookeeper:5.0.1
+    ports:
+      - "2181:2181"
+    volumes:
+      - "/iothub/zookeeper/data:/data"
+      - "/iothub/zookeeper/datalog:/datalog"
     networks:
       - backend
 networks:
